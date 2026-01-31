@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>裸眼3D L型校正工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a12;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .app {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            background: rgba(0,0,0,0.6);
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        h1 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #00d4ff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle { font-size: 0.75em; color: #64748b; margin-bottom: 20px; }
+        
+        .section { margin-bottom: 20px; }
+        
+        .section-title {
+            font-size: 0.7em;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00d4ff, #a855f7);
+            color: white;
+        }
+        
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,212,255,0.3); }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .btn-project {
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            color: white;
+            padding: 14px;
+            font-size: 1em;
+        }
+        
+        .upload-btn {
+            width: 100%;
+            padding: 16px;
+            background: rgba(0,212,255,0.1);
+            border: 2px dashed rgba(0,212,255,0.4);
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        .upload-btn:hover { background: rgba(0,212,255,0.2); border-color: #00d4ff; }
+        
+        .file-info {
+            font-size: 0.8em;
+            color: #4ade80;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .control { margin-bottom: 12px; }
+        
+        .control label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+        
+        .control .val { color: #00d4ff; font-family: monospace; }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #334155;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #a855f7);
+            cursor: pointer;
+        }
+        
+        .steps {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
+        
+        .step:last-child { border-bottom: none; }
+        
+        .step.active { color: #00d4ff; }
+        .step.done { color: #4ade80; }
+        
+        .step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .step.active .step-num { background: #00d4ff; color: #000; }
+        .step.done .step-num { background: #4ade80; color: #000; }
+        
+        .point-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .point-item {
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.8em;
+        }
+        
+        .point-item.set { background: rgba(0,212,255,0.15); border: 1px solid rgba(0,212,255,0.3); }
+        
+        .point-label { color: #64748b; margin-bottom: 4px; }
+        .point-coords { font-family: monospace; color: #00d4ff; }
+        
+        /* 主畫布區 */
+        .main {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 100%);
+        }
+        
+        #canvas3d {
+            cursor: crosshair;
+        }
+        
+        .hint {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            z-index: 10;
+        }
+        
+        .hint.highlight {
+            background: linear-gradient(135deg, rgba(0,212,255,0.8), rgba(168,85,247,0.8));
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.7; } }
+        
+        /* 投影模式 */
+        .projection {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+        }
+        
+        .projection.active { display: block; }
+        
+        #projCanvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .proj-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 12px 20px;
+            border-radius: 25px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10000;
+        }
+        
+        .projection:hover .proj-controls { opacity: 1; }
+        
+        .proj-controls button {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        
+        .proj-controls button:hover { background: rgba(255,255,255,0.3); }
+        .proj-controls button.exit { background: rgba(239,68,68,0.6); }
+
+        .mode-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .mode-tab {
+            flex: 1;
+            padding: 8px 5px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75em;
+            text-align: center;
+        }
+        
+        .mode-tab.active {
+            background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(168,85,247,0.3));
+            border-color: #00d4ff;
+            color: #fff;
+        }
+
+        .video-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 25px;
+        }
+        
+        .video-bar.show { display: flex; }
+        
+        .video-bar button {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .video-bar input[type="range"] {
+            width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <h1>🎯 裸眼3D 校正工具</h1>
+            <p class="subtitle">標記 L 型面板角點，自動計算透視</p>
+            
+            <div class="section">
+                <div class="section-title">📁 來源</div>
+                <button class="upload-btn" id="uploadBtn">📷 上傳圖片/影片</button>
+                <input type="file" id="fileInput" accept="image/*,video/*" style="display:none">
+                <div class="file-info" id="fileInfo" style="display:none"></div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">📍 校正步驟</div>
+                <div class="steps">
+                    <div class="step active" id="step1">
+                        <span class="step-num">1</span>
+                        <span>點擊標記 <b>左上角</b></span>
+                    </div>
+                    <div class="step" id="step2">
+                        <span class="step-num">2</span>
+                        <span>點擊標記 <b>中上 (轉角)</b></span>
+                    </div>
+                    <div class="step" id="step3">
+                        <span class="step-num">3</span>
+                        <span>點擊標記 <b>右上角</b></span>
+                    </div>
+                    <div class="step" id="step4">
+                        <span class="step-num">4</span>
+                        <span>點擊標記 <b>左下角</b></span>
+                    </div>
+                    <div class="step" id="step5">
+                        <span class="step-num">5</span>
+                        <span>點擊標記 <b>中下 (轉角)</b></span>
+                    </div>
+                    <div class="step" id="step6">
+                        <span class="step-num">6</span>
+                        <span>點擊標記 <b>右下角</b></span>
+                    </div>
+                </div>
+                
+                <div class="point-list" id="pointList">
+                    <div class="point-item" id="p0"><div class="point-label">左上</div><div class="point-coords">--</div></div>
+                    <div class="point-item" id="p1"><div class="point-label">中上</div><div class="point-coords">--</div></div>
+                    <div class="point-item" id="p2"><div class="point-label">右上</div><div class="point-coords">--</div></div>
+                    <div class="point-item" id="p3"><div class="point-label">左下</div><div class="point-coords">--</div></div>
+                    <div class="point-item" id="p4"><div class="point-label">中下</div><div class="point-coords">--</div></div>
+                    <div class="point-item" id="p5"><div class="point-label">右下</div><div class="point-coords">--</div></div>
+                </div>
+                
+                <button class="btn btn-secondary" id="resetPointsBtn" style="margin-top:10px">🔄 重置標記點</button>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🎨 效果微調</div>
+                <div class="control">
+                    <label>深度陰影 <span class="val" id="vDepth">30%</span></label>
+                    <input type="range" id="pDepth" min="0" max="100" value="30">
+                </div>
+                <div class="control">
+                    <label>中線反光 <span class="val" id="vFold">40%</span></label>
+                    <input type="range" id="pFold" min="0" max="100" value="40">
+                </div>
+                <div class="control">
+                    <label>暗角 <span class="val" id="vVig">20%</span></label>
+                    <input type="range" id="pVig" min="0" max="100" value="20">
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🖥️ 輸出</div>
+                <button class="btn btn-project" id="projectBtn">🎯 進入投影模式</button>
+                <button class="btn btn-primary" id="downloadBtn">💾 下載 PNG</button>
+                <button class="btn btn-secondary" id="exportBtn">🎬 錄製 WebM</button>
+            </div>
+        </div>
+        
+        <div class="main">
+            <div class="hint" id="hint">👆 在 3D 空間中點擊標記 L 型面板的 6 個角點</div>
+            <canvas id="canvas3d"></canvas>
+            
+            <div class="video-bar" id="videoBar">
+                <button id="playBtn">▶️</button>
+                <input type="range" id="videoSeek" min="0" max="1000" value="0">
+                <span id="timeDisplay" style="color:#fff;font-size:0.8em;font-family:monospace">0:00</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 投影模式 -->
+    <div class="projection" id="projection">
+        <canvas id="projCanvas"></canvas>
+        <div class="proj-controls">
+            <button id="projPlayBtn">▶️ 播放</button>
+            <button id="projLoopBtn">🔁 循環</button>
+            <button class="exit" id="projExitBtn">✕ 退出</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        // ===== 畫布 =====
+        const canvas = document.getElementById('canvas3d');
+        const ctx = canvas.getContext('2d');
+        const projCanvas = document.getElementById('projCanvas');
+        const projCtx = projCanvas.getContext('2d');
+        
+        // ===== 狀態 =====
+        let sourceImg = null;
+        let sourceVideo = null;
+        let isVideo = false;
+        let isPlaying = false;
+        let projectionActive = false;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let chunks = [];
+        
+        // 6 個標記點: [左上, 中上, 右上, 左下, 中下, 右下]
+        let points = [null, null, null, null, null, null];
+        let currentStep = 0;
+        let draggingPoint = -1;
+        
+        // 參數
+        const P = { depth: 30, fold: 40, vig: 20 };
+        
+        // 3D 視角
+        let camRotX = 20, camRotY = -25;
+        let isDraggingCam = false;
+        let lastMX = 0, lastMY = 0;
+        
+        // ===== 初始化 =====
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            setupUpload();
+            setupControls();
+            setupCanvas();
+            setupProjection();
+            setupExport();
+            
+            render();
+        }
+        
+        function resizeCanvas() {
+            const main = document.querySelector('.main');
+            canvas.width = main.clientWidth;
+            canvas.height = main.clientHeight;
+        }
+        
+        // ===== 上傳 =====
+        function setupUpload() {
+            document.getElementById('uploadBtn').onclick = () => document.getElementById('fileInput').click();
+            
+            document.getElementById('fileInput').onchange = function() {
+                if (this.files[0]) loadFile(this.files[0]);
+            };
+        }
+        
+        function loadFile(file) {
+            const info = document.getElementById('fileInfo');
+            
+            if (file.type.startsWith('video/')) {
+                isVideo = true;
+                sourceImg = null;
+                
+                const video = document.createElement('video');
+                video.muted = true;
+                video.loop = true;
+                video.playsInline = true;
+                
+                video.onloadeddata = () => {
+                    sourceVideo = video;
+                    info.textContent = '✓ ' + file.name;
+                    info.style.display = 'block';
+                    document.getElementById('videoBar').classList.add('show');
+                };
+                
+                video.ontimeupdate = () => {
+                    if (sourceVideo && sourceVideo.duration) {
+                        document.getElementById('videoSeek').value = (sourceVideo.currentTime / sourceVideo.duration) * 1000;
+                        const t = sourceVideo.currentTime;
+                        document.getElementById('timeDisplay').textContent = 
+                            Math.floor(t/60) + ':' + String(Math.floor(t%60)).padStart(2,'0');
+                    }
+                };
+                
+                video.src = URL.createObjectURL(file);
+                video.load();
+            } else if (file.type.startsWith('image/')) {
+                isVideo = false;
+                sourceVideo = null;
+                document.getElementById('videoBar').classList.remove('show');
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        sourceImg = img;
+                        info.textContent = '✓ ' + file.name;
+                        info.style.display = 'block';
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // ===== 控制 =====
+        function setupControls() {
+            ['pDepth', 'pFold', 'pVig'].forEach(id => {
+                const el = document.getElementById(id);
+                const key = id.substring(1).toLowerCase();
+                el.oninput = () => {
+                    P[key] = parseInt(el.value);
+                    document.getElementById('v' + id.substring(1)).textContent = P[key] + '%';
+                };
+            });
+            
+            document.getElementById('resetPointsBtn').onclick = () => {
+                points = [null, null, null, null, null, null];
+                currentStep = 0;
+                updateStepUI();
+                updatePointsUI();
+            };
+            
+            document.getElementById('playBtn').onclick = togglePlay;
+            document.getElementById('videoSeek').oninput = function() {
+                if (sourceVideo && sourceVideo.duration) {
+                    sourceVideo.currentTime = (this.value / 1000) * sourceVideo.duration;
+                }
+            };
+        }
+        
+        function togglePlay() {
+            if (!sourceVideo) return;
+            if (isPlaying) {
+                sourceVideo.pause();
+                document.getElementById('playBtn').textContent = '▶️';
+                document.getElementById('projPlayBtn').textContent = '▶️ 播放';
+            } else {
+                sourceVideo.play();
+                document.getElementById('playBtn').textContent = '⏸️';
+                document.getElementById('projPlayBtn').textContent = '⏸️ 暫停';
+            }
+            isPlaying = !isPlaying;
+        }
+        
+        function updateStepUI() {
+            for (let i = 0; i < 6; i++) {
+                const el = document.getElementById('step' + (i + 1));
+                el.classList.remove('active', 'done');
+                if (i < currentStep) el.classList.add('done');
+                else if (i === currentStep) el.classList.add('active');
+            }
+            
+            const hint = document.getElementById('hint');
+            const labels = ['左上角', '中上 (轉角)', '右上角', '左下角', '中下 (轉角)', '右下角'];
+            if (currentStep < 6) {
+                hint.textContent = '👆 點擊標記 ' + labels[currentStep];
+                hint.classList.add('highlight');
+            } else {
+                hint.textContent = '✓ 校正完成！可拖曳調整點位';
+                hint.classList.remove('highlight');
+            }
+        }
+        
+        function updatePointsUI() {
+            const labels = ['左上', '中上', '右上', '左下', '中下', '右下'];
+            for (let i = 0; i < 6; i++) {
+                const el = document.getElementById('p' + i);
+                const coords = el.querySelector('.point-coords');
+                if (points[i]) {
+                    el.classList.add('set');
+                    coords.textContent = `(${points[i].x.toFixed(0)}, ${points[i].y.toFixed(0)})`;
+                } else {
+                    el.classList.remove('set');
+                    coords.textContent = '--';
+                }
+            }
+        }
+        
+        // ===== 畫布互動 =====
+        function setupCanvas() {
+            canvas.onmousedown = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // 檢查是否點擊到現有點
+                for (let i = 0; i < 6; i++) {
+                    if (points[i]) {
+                        const dx = x - points[i].x;
+                        const dy = y - points[i].y;
+                        if (Math.sqrt(dx*dx + dy*dy) < 15) {
+                            draggingPoint = i;
+                            return;
+                        }
+                    }
+                }
+                
+                // 新增點
+                if (currentStep < 6) {
+                    points[currentStep] = { x, y };
+                    currentStep++;
+                    updateStepUI();
+                    updatePointsUI();
+                } else {
+                    // 校正完成後，右鍵拖曳旋轉視角
+                    if (e.button === 2 || e.ctrlKey) {
+                        isDraggingCam = true;
+                        lastMX = e.clientX;
+                        lastMY = e.clientY;
+                    }
+                }
+            };
+            
+            canvas.onmousemove = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                if (draggingPoint >= 0) {
+                    points[draggingPoint] = { x, y };
+                    updatePointsUI();
+                }
+                
+                if (isDraggingCam) {
+                    camRotY += (e.clientX - lastMX) * 0.3;
+                    camRotX += (e.clientY - lastMY) * 0.3;
+                    camRotX = Math.max(-60, Math.min(60, camRotX));
+                    lastMX = e.clientX;
+                    lastMY = e.clientY;
+                }
+            };
+            
+            canvas.onmouseup = () => {
+                draggingPoint = -1;
+                isDraggingCam = false;
+            };
+            
+            canvas.oncontextmenu = (e) => e.preventDefault();
+        }
+        
+        // ===== 投影模式 =====
+        function setupProjection() {
+            document.getElementById('projectBtn').onclick = () => {
+                projectionActive = true;
+                document.getElementById('projection').classList.add('active');
+                projCanvas.width = window.innerWidth;
+                projCanvas.height = window.innerHeight;
+                if (sourceVideo && !isPlaying) togglePlay();
+            };
+            
+            document.getElementById('projExitBtn').onclick = () => {
+                projectionActive = false;
+                document.getElementById('projection').classList.remove('active');
+            };
+            
+            document.getElementById('projPlayBtn').onclick = togglePlay;
+            
+            document.getElementById('projLoopBtn').onclick = function() {
+                if (sourceVideo) {
+                    sourceVideo.loop = !sourceVideo.loop;
+                    this.textContent = sourceVideo.loop ? '🔁 循環' : '➡️ 單次';
+                }
+            };
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && projectionActive) {
+                    projectionActive = false;
+                    document.getElementById('projection').classList.remove('active');
+                }
+            });
+        }
+        
+        // ===== 匯出 =====
+        function setupExport() {
+            document.getElementById('downloadBtn').onclick = () => {
+                // 創建輸出畫布
+                const outCanvas = document.createElement('canvas');
+                const src = isVideo ? sourceVideo : sourceImg;
+                if (!src) return;
+                
+                outCanvas.width = isVideo ? src.videoWidth : src.width;
+                outCanvas.height = isVideo ? src.videoHeight : src.height;
+                const outCtx = outCanvas.getContext('2d');
+                
+                renderTransformed(outCtx, outCanvas.width, outCanvas.height, src);
+                
+                const link = document.createElement('a');
+                link.download = 'anamorphic-' + Date.now() + '.png';
+                link.href = outCanvas.toDataURL('image/png');
+                link.click();
+            };
+            
+            document.getElementById('exportBtn').onclick = async () => {
+                if (!isVideo || !sourceVideo) {
+                    document.getElementById('downloadBtn').click();
+                    return;
+                }
+                
+                if (isRecording) {
+                    if (mediaRecorder) mediaRecorder.stop();
+                    return;
+                }
+                
+                // 創建輸出畫布
+                const outCanvas = document.createElement('canvas');
+                outCanvas.width = sourceVideo.videoWidth;
+                outCanvas.height = sourceVideo.videoHeight;
+                const outCtx = outCanvas.getContext('2d');
+                
+                const stream = outCanvas.captureStream(30);
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+                
+                chunks = [];
+                mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'anamorphic-' + Date.now() + '.webm';
+                    a.click();
+                    isRecording = false;
+                    document.getElementById('exportBtn').textContent = '🎬 錄製 WebM';
+                };
+                
+                sourceVideo.currentTime = 0;
+                await sourceVideo.play();
+                isPlaying = true;
+                
+                // 錄製循環
+                const recordFrame = () => {
+                    if (!isRecording) return;
+                    renderTransformed(outCtx, outCanvas.width, outCanvas.height, sourceVideo);
+                    if (sourceVideo.ended) {
+                        mediaRecorder.stop();
+                    } else {
+                        requestAnimationFrame(recordFrame);
+                    }
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('exportBtn').textContent = '⏹️ 停止';
+                recordFrame();
+                
+                sourceVideo.onended = () => {
+                    if (isRecording && mediaRecorder) mediaRecorder.stop();
+                };
+            };
+        }
+        
+        // ===== 渲染 =====
+        function render() {
+            // 清除
+            ctx.fillStyle = '#12121f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 繪製網格背景
+            drawGrid(ctx, canvas.width, canvas.height);
+            
+            // 取得來源
+            const src = isVideo ? sourceVideo : sourceImg;
+            
+            // 如果有足夠的點，繪製變形預覽
+            if (src && points[0] && points[1] && points[2] && points[3] && points[4] && points[5]) {
+                drawTransformedPreview(ctx, src);
+            }
+            
+            // 繪製標記點和連線
+            drawPoints(ctx);
+            
+            // 投影模式
+            if (projectionActive && src) {
+                projCanvas.width = window.innerWidth;
+                projCanvas.height = window.innerHeight;
+                projCtx.fillStyle = '#000';
+                projCtx.fillRect(0, 0, projCanvas.width, projCanvas.height);
+                
+                // 在投影模式中繪製變形後的內容
+                if (points.every(p => p !== null)) {
+                    renderTransformedFullscreen(projCtx, projCanvas.width, projCanvas.height, src);
+                }
+            }
+            
+            requestAnimationFrame(render);
+        }
+        
+        function drawGrid(c, w, h) {
+            c.strokeStyle = 'rgba(255,255,255,0.05)';
+            c.lineWidth = 1;
+            
+            const step = 50;
+            for (let x = 0; x < w; x += step) {
+                c.beginPath();
+                c.moveTo(x, 0);
+                c.lineTo(x, h);
+                c.stroke();
+            }
+            for (let y = 0; y < h; y += step) {
+                c.beginPath();
+                c.moveTo(0, y);
+                c.lineTo(w, y);
+                c.stroke();
+            }
+        }
+        
+        function drawPoints(c) {
+            const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#ff6b6b', '#ffd93d', '#6bcb77'];
+            const labels = ['TL', 'TM', 'TR', 'BL', 'BM', 'BR'];
+            
+            // 繪製連線
+            c.strokeStyle = 'rgba(0,212,255,0.5)';
+            c.lineWidth = 2;
+            
+            // 上邊
+            if (points[0] && points[1]) { c.beginPath(); c.moveTo(points[0].x, points[0].y); c.lineTo(points[1].x, points[1].y); c.stroke(); }
+            if (points[1] && points[2]) { c.beginPath(); c.moveTo(points[1].x, points[1].y); c.lineTo(points[2].x, points[2].y); c.stroke(); }
+            
+            // 下邊
+            if (points[3] && points[4]) { c.beginPath(); c.moveTo(points[3].x, points[3].y); c.lineTo(points[4].x, points[4].y); c.stroke(); }
+            if (points[4] && points[5]) { c.beginPath(); c.moveTo(points[4].x, points[4].y); c.lineTo(points[5].x, points[5].y); c.stroke(); }
+            
+            // 側邊
+            c.strokeStyle = 'rgba(168,85,247,0.5)';
+            if (points[0] && points[3]) { c.beginPath(); c.moveTo(points[0].x, points[0].y); c.lineTo(points[3].x, points[3].y); c.stroke(); }
+            if (points[1] && points[4]) { c.beginPath(); c.moveTo(points[1].x, points[1].y); c.lineTo(points[4].x, points[4].y); c.stroke(); }
+            if (points[2] && points[5]) { c.beginPath(); c.moveTo(points[2].x, points[2].y); c.lineTo(points[5].x, points[5].y); c.stroke(); }
+            
+            // 繪製點
+            for (let i = 0; i < 6; i++) {
+                if (points[i]) {
+                    // 外圈
+                    c.beginPath();
+                    c.arc(points[i].x, points[i].y, 12, 0, Math.PI * 2);
+                    c.fillStyle = colors[i];
+                    c.fill();
+                    
+                    // 內圈
+                    c.beginPath();
+                    c.arc(points[i].x, points[i].y, 6, 0, Math.PI * 2);
+                    c.fillStyle = '#fff';
+                    c.fill();
+                    
+                    // 標籤
+                    c.fillStyle = '#fff';
+                    c.font = 'bold 10px sans-serif';
+                    c.textAlign = 'center';
+                    c.fillText(labels[i], points[i].x, points[i].y - 20);
+                }
+            }
+            
+            // 繪製下一個點的預覽位置
+            if (currentStep < 6) {
+                c.fillStyle = 'rgba(255,255,255,0.3)';
+                c.font = '14px sans-serif';
+                c.textAlign = 'center';
+                const labels2 = ['左上角', '中上 (轉角)', '右上角', '左下角', '中下 (轉角)', '右下角'];
+                c.fillText('點擊標記: ' + labels2[currentStep], canvas.width / 2, canvas.height - 30);
+            }
+        }
+        
+        function drawTransformedPreview(c, src) {
+            // 繪製左面板 (點 0,1,3,4)
+            drawQuad(c, src, 
+                points[0], points[1], points[4], points[3],
+                0, 0, 0.5, 1
+            );
+            
+            // 繪製右面板 (點 1,2,4,5)
+            drawQuad(c, src,
+                points[1], points[2], points[5], points[4],
+                0.5, 0, 1, 1
+            );
+            
+            // 中線效果
+            const midX = (points[1].x + points[4].x) / 2;
+            const midTopY = points[1].y;
+            const midBotY = points[4].y;
+            
+            const foldW = 20 + P.fold * 0.5;
+            const grad = c.createLinearGradient(midX - foldW, 0, midX + foldW, 0);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(0.4, `rgba(0,0,0,${P.depth / 200})`);
+            grad.addColorStop(0.5, `rgba(255,255,255,${P.fold / 400})`);
+            grad.addColorStop(0.6, `rgba(0,0,0,${P.depth / 200})`);
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            c.fillStyle = grad;
+            c.beginPath();
+            c.moveTo(points[1].x - foldW, points[1].y);
+            c.lineTo(points[1].x + foldW, points[1].y);
+            c.lineTo(points[4].x + foldW, points[4].y);
+            c.lineTo(points[4].x - foldW, points[4].y);
+            c.closePath();
+            c.fill();
+        }
+        
+        // 繪製四邊形變形
+        function drawQuad(c, src, p0, p1, p2, p3, u0, v0, u1, v1) {
+            const srcW = isVideo ? src.videoWidth : src.width;
+            const srcH = isVideo ? src.videoHeight : src.height;
+            
+            // 使用細分網格繪製
+            const divisions = 20;
+            
+            for (let i = 0; i < divisions; i++) {
+                for (let j = 0; j < divisions; j++) {
+                    const t0 = i / divisions;
+                    const t1 = (i + 1) / divisions;
+                    const s0 = j / divisions;
+                    const s1 = (j + 1) / divisions;
+                    
+                    // 雙線性插值目標點
+                    const lerp = (a, b, t) => a + (b - a) * t;
+                    const bilinear = (t, s) => ({
+                        x: lerp(lerp(p0.x, p1.x, t), lerp(p3.x, p2.x, t), s),
+                        y: lerp(lerp(p0.y, p1.y, t), lerp(p3.y, p2.y, t), s)
+                    });
+                    
+                    const q0 = bilinear(t0, s0);
+                    const q1 = bilinear(t1, s0);
+                    const q2 = bilinear(t1, s1);
+                    const q3 = bilinear(t0, s1);
+                    
+                    // 來源 UV
+                    const su0 = lerp(u0, u1, t0) * srcW;
+                    const su1 = lerp(u0, u1, t1) * srcW;
+                    const sv0 = lerp(v0, v1, s0) * srcH;
+                    const sv1 = lerp(v0, v1, s1) * srcH;
+                    
+                    // 繪製小塊
+                    c.save();
+                    c.beginPath();
+                    c.moveTo(q0.x, q0.y);
+                    c.lineTo(q1.x, q1.y);
+                    c.lineTo(q2.x, q2.y);
+                    c.lineTo(q3.x, q3.y);
+                    c.closePath();
+                    c.clip();
+                    
+                    // 計算仿射變換
+                    const dx = q1.x - q0.x;
+                    const dy = q1.y - q0.y;
+                    const ex = q3.x - q0.x;
+                    const ey = q3.y - q0.y;
+                    
+                    c.setTransform(
+                        dx / (su1 - su0), dy / (su1 - su0),
+                        ex / (sv1 - sv0), ey / (sv1 - sv0),
+                        q0.x - su0 * dx / (su1 - su0) - sv0 * ex / (sv1 - sv0),
+                        q0.y - su0 * dy / (su1 - su0) - sv0 * ey / (sv1 - sv0)
+                    );
+                    
+                    c.drawImage(src, 0, 0);
+                    c.restore();
+                }
+            }
+        }
+        
+        function renderTransformed(c, w, h, src) {
+            c.fillStyle = '#000';
+            c.fillRect(0, 0, w, h);
+            
+            if (!points.every(p => p !== null)) {
+                c.drawImage(src, 0, 0, w, h);
+                return;
+            }
+            
+            // 將標記點轉換為輸出比例
+            const scaleX = w / canvas.width;
+            const scaleY = h / canvas.height;
+            
+            const scaledPoints = points.map(p => ({
+                x: p.x * scaleX,
+                y: p.y * scaleY
+            }));
+            
+            // 左面板
+            drawQuadScaled(c, src, 
+                scaledPoints[0], scaledPoints[1], scaledPoints[4], scaledPoints[3],
+                0, 0, 0.5, 1
+            );
+            
+            // 右面板
+            drawQuadScaled(c, src,
+                scaledPoints[1], scaledPoints[2], scaledPoints[5], scaledPoints[4],
+                0.5, 0, 1, 1
+            );
+        }
+        
+        function drawQuadScaled(c, src, p0, p1, p2, p3, u0, v0, u1, v1) {
+            const srcW = isVideo ? src.videoWidth : src.width;
+            const srcH = isVideo ? src.videoHeight : src.height;
+            const divisions = 30;
+            
+            for (let i = 0; i < divisions; i++) {
+                for (let j = 0; j < divisions; j++) {
+                    const t0 = i / divisions;
+                    const t1 = (i + 1) / divisions;
+                    const s0 = j / divisions;
+                    const s1 = (j + 1) / divisions;
+                    
+                    const lerp = (a, b, t) => a + (b - a) * t;
+                    const bilinear = (t, s) => ({
+                        x: lerp(lerp(p0.x, p1.x, t), lerp(p3.x, p2.x, t), s),
+                        y: lerp(lerp(p0.y, p1.y, t), lerp(p3.y, p2.y, t), s)
+                    });
+                    
+                    const q0 = bilinear(t0, s0);
+                    const q1 = bilinear(t1, s0);
+                    const q2 = bilinear(t1, s1);
+                    const q3 = bilinear(t0, s1);
+                    
+                    const su0 = lerp(u0, u1, t0) * srcW;
+                    const su1 = lerp(u0, u1, t1) * srcW;
+                    const sv0 = lerp(v0, v1, s0) * srcH;
+                    const sv1 = lerp(v0, v1, s1) * srcH;
+                    
+                    c.save();
+                    c.beginPath();
+                    c.moveTo(q0.x, q0.y);
+                    c.lineTo(q1.x, q1.y);
+                    c.lineTo(q2.x, q2.y);
+                    c.lineTo(q3.x, q3.y);
+                    c.closePath();
+                    c.clip();
+                    
+                    const dx = q1.x - q0.x;
+                    const dy = q1.y - q0.y;
+                    const ex = q3.x - q0.x;
+                    const ey = q3.y - q0.y;
+                    
+                    c.setTransform(
+                        dx / (su1 - su0), dy / (su1 - su0),
+                        ex / (sv1 - sv0), ey / (sv1 - sv0),
+                        q0.x - su0 * dx / (su1 - su0) - sv0 * ex / (sv1 - sv0),
+                        q0.y - su0 * dy / (su1 - su0) - sv0 * ey / (sv1 - sv0)
+                    );
+                    
+                    c.drawImage(src, 0, 0);
+                    c.restore();
+                }
+            }
+        }
+        
+        function renderTransformedFullscreen(c, w, h, src) {
+            // 投影模式：填滿整個螢幕
+            const srcW = isVideo ? src.videoWidth : src.width;
+            const srcH = isVideo ? src.videoHeight : src.height;
+            
+            // 計算縮放以填滿螢幕
+            const scale = Math.max(w / srcW, h / srcH);
+            const drawW = srcW * scale;
+            const drawH = srcH * scale;
+            const offsetX = (w - drawW) / 2;
+            const offsetY = (h - drawH) / 2;
+            
+            // 將標記點從畫布座標轉換為全螢幕座標
+            const canvasToScreen = (p) => ({
+                x: offsetX + (p.x / canvas.width) * drawW,
+                y: offsetY + (p.y / canvas.height) * drawH
+            });
+            
+            const screenPoints = points.map(canvasToScreen);
+            
+            // 左面板
+            drawQuadScaled(c, src,
+                screenPoints[0], screenPoints[1], screenPoints[4], screenPoints[3],
+                0, 0, 0.5, 1
+            );
+            
+            // 右面板
+            drawQuadScaled(c, src,
+                screenPoints[1], screenPoints[2], screenPoints[5], screenPoints[4],
+                0.5, 0, 1, 1
+            );
+        }
+        
+        // 啟動
+        init();
+    })();
+    </script>
+</body>
+</html>
