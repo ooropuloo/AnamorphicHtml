@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>裸眼3D L型轉換器 v9</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a12;
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .app {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            height: 100vh;
+        }
+        
+        .sidebar {
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        h1 {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #00d4ff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle { font-size: 0.7em; color: #64748b; margin-bottom: 15px; }
+        
+        .section { margin-bottom: 15px; }
+        
+        .section-title {
+            font-size: 0.65em;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 6px;
+        }
+        
+        .btn-primary { background: linear-gradient(135deg, #00d4ff, #a855f7); color: white; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-bake { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 14px; font-size: 0.95em; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .upload-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(0,212,255,0.1);
+            border: 2px dashed rgba(0,212,255,0.4);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+        }
+        
+        .file-info { font-size: 0.75em; color: #4ade80; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 4px; margin: 8px 0; }
+        
+        .control { margin-bottom: 12px; }
+        .control label { display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 4px; }
+        .control .val { color: #00d4ff; font-family: monospace; }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #334155;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #a855f7);
+            cursor: pointer;
+        }
+        
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.72em;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .nav-keys {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .nav-keys kbd {
+            background: rgba(255,255,255,0.1);
+            padding: 6px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.75em;
+        }
+        
+        /* 主區域 */
+        .main {
+            display: flex;
+            flex-direction: column;
+            background: #0d0d1a;
+        }
+        
+        .view-tabs {
+            display: flex;
+            padding: 10px;
+            gap: 8px;
+        }
+        
+        .view-tab {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.1);
+            color: #94a3b8;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .view-tab.active {
+            background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(168,85,247,0.2));
+            border-color: #00d4ff;
+            color: #fff;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+        }
+        
+        canvas {
+            max-width: 95%;
+            max-height: 90%;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+        
+        .overlay {
+            position: absolute;
+            pointer-events: none;
+        }
+        
+        .cam-info {
+            bottom: 80px;
+            left: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.7em;
+            font-family: monospace;
+        }
+        
+        .hint {
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8em;
+        }
+        
+        .video-ctrl {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.9);
+            border-radius: 30px;
+            z-index: 100;
+        }
+        
+        .video-ctrl.show { display: flex; }
+        
+        .video-ctrl button {
+            background: linear-gradient(135deg, #00d4ff, #a855f7);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        
+        .video-ctrl input[type="range"] { width: 200px; }
+        .video-ctrl .time { font-size: 0.8em; color: #aaa; font-family: monospace; }
+        
+        .progress-box {
+            margin-top: 10px;
+            padding: 12px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .progress-box.show { display: block; }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            width: 0%;
+            transition: width 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <h1>🎯 裸眼3D L型轉換器</h1>
+            <p class="subtitle">Anamorphic 變形輸出工具 v9</p>
+            
+            <div class="section">
+                <div class="section-title">📁 來源檔案</div>
+                <button class="upload-btn" id="uploadBtn">📷 點擊上傳 影片/圖片</button>
+                <input type="file" id="fileInput" accept="image/*,video/*" style="display:none">
+                <div class="file-info" id="fileInfo" style="display:none"></div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🎮 3D 視圖導航</div>
+                <div class="nav-keys">
+                    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+                    <kbd>Q↑</kbd><kbd>E↓</kbd><kbd>R重置</kbd><kbd>滾輪</kbd>
+                </div>
+                <div style="font-size:0.7em;color:#64748b;">右鍵拖曳旋轉視角</div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">📐 L型螢幕參數</div>
+                
+                <div class="control">
+                    <label>面板寬度 <span class="val" id="vPanelW">800</span></label>
+                    <input type="range" id="pPanelW" min="300" max="1920" value="800" step="10">
+                </div>
+                
+                <div class="control">
+                    <label>面板高度 <span class="val" id="vPanelH">500</span></label>
+                    <input type="range" id="pPanelH" min="200" max="1080" value="500" step="10">
+                </div>
+                
+                <div class="control">
+                    <label>L型夾角 <span class="val" id="vAngle">90°</span></label>
+                    <input type="range" id="pAngle" min="60" max="120" value="90">
+                </div>
+                
+                <div class="control">
+                    <label>中線位置 <span class="val" id="vSplit">50%</span></label>
+                    <input type="range" id="pSplit" min="25" max="75" value="50">
+                </div>
+                
+                <div class="control">
+                    <label>透視強度 <span class="val" id="vPersp">20%</span></label>
+                    <input type="range" id="pPersp" min="0" max="50" value="20">
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🎨 效果調整</div>
+                
+                <div class="control">
+                    <label>內容縮放 (留出跳出空間) <span class="val" id="vScale">85%</span></label>
+                    <input type="range" id="pScale" min="60" max="100" value="85">
+                </div>
+                
+                <div class="control">
+                    <label>深度陰影 <span class="val" id="vShadow">50%</span></label>
+                    <input type="range" id="pShadow" min="0" max="100" value="50">
+                </div>
+                
+                <div class="control">
+                    <label>中線摺痕 <span class="val" id="vFold">40%</span></label>
+                    <input type="range" id="pFold" min="0" max="100" value="40">
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">🎬 烘焙輸出</div>
+                
+                <div class="info-box">
+                    💡 <b>原理</b>：輸出的影片帶有「反向透視變形」。<br>
+                    當你在 L 型螢幕全螢幕播放時，螢幕的角度會抵銷變形，<br>
+                    站在轉角前方觀看就會看到裸眼 3D 效果！
+                </div>
+                
+                <div class="control">
+                    <label>輸出解析度 <span class="val" id="vRes">1920×1080</span></label>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;">
+                    <button class="btn btn-secondary" onclick="setRes(1280,720)">720p</button>
+                    <button class="btn btn-secondary" onclick="setRes(1920,1080)">1080p</button>
+                    <button class="btn btn-secondary" onclick="setRes(2560,1440)">1440p</button>
+                    <button class="btn btn-secondary" onclick="setRes(3840,2160)">4K</button>
+                </div>
+                
+                <button class="btn btn-bake" id="bakeBtn">🎬 烘焙輸出影片</button>
+                <button class="btn btn-primary" id="pngBtn">📷 儲存當前幀 PNG</button>
+                
+                <div class="progress-box" id="progressBox">
+                    <div style="display:flex;justify-content:space-between;font-size:0.85em;">
+                        <span id="progressText">準備中...</span>
+                        <span id="progressTime">0:00</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                    <button class="btn btn-secondary" id="cancelBtn" style="margin-top:5px;">取消烘焙</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main">
+            <div class="view-tabs">
+                <div class="view-tab active" data-view="3d">🎮 3D 校正視圖</div>
+                <div class="view-tab" data-view="output">📺 輸出預覽 (烘焙結果)</div>
+            </div>
+            
+            <div class="canvas-area">
+                <canvas id="canvas3d" width="1280" height="720"></canvas>
+                <canvas id="canvasOut" width="1920" height="1080" style="display:none;"></canvas>
+                
+                <div class="overlay hint" id="hint">在 3D 視圖中查看 L 型螢幕效果，切換到「輸出預覽」查看烘焙結果</div>
+                <div class="overlay cam-info" id="camInfo">相機: (0, 0, 800)</div>
+                
+                <div class="video-ctrl" id="videoCtrl">
+                    <button id="playBtn">▶️</button>
+                    <input type="range" id="seekBar" min="0" max="1000" value="0">
+                    <span class="time" id="timeLabel">0:00 / 0:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        // ===== Canvas =====
+        const canvas3d = document.getElementById('canvas3d');
+        const ctx3d = canvas3d.getContext('2d');
+        const canvasOut = document.getElementById('canvasOut');
+        const ctxOut = canvasOut.getContext('2d');
+        
+        // ===== State =====
+        let source = null;  // Image or Video element
+        let isVideo = false;
+        let isPlaying = false;
+        let currentView = '3d';
+        let cancelBake = false;
+        
+        // ===== Camera =====
+        const cam = { x: 0, y: 0, z: 800, rotH: 0, rotV: 12, fov: 500 };
+        
+        // ===== Parameters =====
+        const P = {
+            panelW: 800,
+            panelH: 500,
+            angle: 90,
+            split: 50,
+            persp: 20,
+            scale: 85,
+            shadow: 50,
+            fold: 40,
+            outW: 1920,
+            outH: 1080
+        };
+        
+        // ===== Input =====
+        const keys = {};
+        let dragging = false, lastX = 0, lastY = 0;
+        
+        // ===== Init =====
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            setupUpload();
+            setupControls();
+            setupInput();
+            setupTabs();
+            setupExport();
+            loop();
+        }
+        
+        function resize() {
+            const area = document.querySelector('.canvas-area');
+            canvas3d.width = area.clientWidth;
+            canvas3d.height = area.clientHeight - 60;
+            canvasOut.width = P.outW;
+            canvasOut.height = P.outH;
+        }
+        
+        // ===== Upload =====
+        function setupUpload() {
+            document.getElementById('uploadBtn').onclick = () => document.getElementById('fileInput').click();
+            document.getElementById('fileInput').onchange = function() {
+                if (this.files[0]) loadFile(this.files[0]);
+            };
+        }
+        
+        function loadFile(file) {
+            const info = document.getElementById('fileInfo');
+            info.style.display = 'block';
+            info.textContent = '載入中...';
+            
+            if (file.type.startsWith('video/')) {
+                isVideo = true;
+                const v = document.createElement('video');
+                v.muted = true;
+                v.loop = true;
+                v.playsInline = true;
+                v.onloadeddata = () => {
+                    source = v;
+                    info.textContent = `✓ ${file.name} (${v.videoWidth}×${v.videoHeight}, ${v.duration.toFixed(1)}s)`;
+                    document.getElementById('videoCtrl').classList.add('show');
+                };
+                v.ontimeupdate = updateTime;
+                v.src = URL.createObjectURL(file);
+                v.load();
+            } else {
+                isVideo = false;
+                document.getElementById('videoCtrl').classList.remove('show');
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        source = img;
+                        info.textContent = `✓ ${file.name} (${img.width}×${img.height})`;
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function updateTime() {
+            if (!source || !isVideo) return;
+            const cur = source.currentTime, dur = source.duration || 1;
+            document.getElementById('seekBar').value = (cur / dur) * 1000;
+            const fmt = t => Math.floor(t/60) + ':' + String(Math.floor(t%60)).padStart(2,'0');
+            document.getElementById('timeLabel').textContent = fmt(cur) + ' / ' + fmt(dur);
+        }
+        
+        function togglePlay() {
+            if (!source || !isVideo) return;
+            if (isPlaying) {
+                source.pause();
+                document.getElementById('playBtn').textContent = '▶️';
+            } else {
+                source.play();
+                document.getElementById('playBtn').textContent = '⏸️';
+            }
+            isPlaying = !isPlaying;
+        }
+        
+        // ===== Controls =====
+        function setupControls() {
+            const bind = (id, key, suffix = '', cb) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.oninput = () => {
+                    P[key] = parseFloat(el.value);
+                    const valEl = document.getElementById('v' + key.charAt(0).toUpperCase() + key.slice(1));
+                    if (valEl) valEl.textContent = el.value + suffix;
+                    if (cb) cb();
+                };
+            };
+            
+            bind('pPanelW', 'panelW', '');
+            bind('pPanelH', 'panelH', '');
+            bind('pAngle', 'angle', '°');
+            bind('pSplit', 'split', '%');
+            bind('pPersp', 'persp', '%');
+            bind('pScale', 'scale', '%');
+            bind('pShadow', 'shadow', '%');
+            bind('pFold', 'fold', '%');
+            
+            document.getElementById('playBtn').onclick = togglePlay;
+            document.getElementById('seekBar').oninput = function() {
+                if (source && isVideo) source.currentTime = (this.value / 1000) * source.duration;
+            };
+        }
+        
+        window.setRes = function(w, h) {
+            P.outW = w; P.outH = h;
+            document.getElementById('vRes').textContent = w + '×' + h;
+            resize();
+        };
+        
+        // ===== Input =====
+        function setupInput() {
+            window.addEventListener('keydown', e => {
+                keys[e.key.toLowerCase()] = true;
+                if (e.key.toLowerCase() === 'r') { cam.x = 0; cam.y = 0; cam.z = 800; cam.rotH = 0; cam.rotV = 12; }
+            });
+            window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+            
+            canvas3d.addEventListener('mousedown', e => {
+                if (e.button === 2) { dragging = true; lastX = e.clientX; lastY = e.clientY; }
+            });
+            window.addEventListener('mousemove', e => {
+                if (dragging) {
+                    cam.rotH += (e.clientX - lastX) * 0.3;
+                    cam.rotV = Math.max(-80, Math.min(80, cam.rotV + (e.clientY - lastY) * 0.3));
+                    lastX = e.clientX; lastY = e.clientY;
+                }
+            });
+            window.addEventListener('mouseup', () => dragging = false);
+            canvas3d.addEventListener('wheel', e => { e.preventDefault(); cam.z = Math.max(200, Math.min(2000, cam.z + e.deltaY)); }, { passive: false });
+            canvas3d.addEventListener('contextmenu', e => e.preventDefault());
+        }
+        
+        function handleKeys() {
+            const spd = 10;
+            const rad = cam.rotH * Math.PI / 180;
+            if (keys['w']) { cam.x += Math.sin(rad) * spd; cam.z -= Math.cos(rad) * spd; }
+            if (keys['s']) { cam.x -= Math.sin(rad) * spd; cam.z += Math.cos(rad) * spd; }
+            if (keys['a']) { cam.x -= Math.cos(rad) * spd; cam.z -= Math.sin(rad) * spd; }
+            if (keys['d']) { cam.x += Math.cos(rad) * spd; cam.z += Math.sin(rad) * spd; }
+            if (keys['q']) cam.y += spd;
+            if (keys['e']) cam.y -= spd;
+        }
+        
+        // ===== Tabs =====
+        function setupTabs() {
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.onclick = () => {
+                    currentView = tab.dataset.view;
+                    document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === currentView));
+                    canvas3d.style.display = currentView === '3d' ? 'block' : 'none';
+                    canvasOut.style.display = currentView === 'output' ? 'block' : 'none';
+                    document.getElementById('camInfo').style.display = currentView === '3d' ? 'block' : 'none';
+                    document.getElementById('hint').textContent = currentView === '3d'
+                        ? '在 3D 視圖中查看 L 型螢幕效果'
+                        : '📺 輸出預覽 - 這就是烘焙後會在 L 螢幕播放的畫面';
+                };
+            });
+        }
+        
+        // ===== Export =====
+        function setupExport() {
+            document.getElementById('pngBtn').onclick = () => {
+                if (!source) return alert('請先上傳檔案');
+                renderOutput(ctxOut, P.outW, P.outH, source);
+                const a = document.createElement('a');
+                a.download = `L-screen-${P.outW}x${P.outH}.png`;
+                a.href = canvasOut.toDataURL('image/png');
+                a.click();
+            };
+            
+            document.getElementById('cancelBtn').onclick = () => cancelBake = true;
+            
+            document.getElementById('bakeBtn').onclick = async () => {
+                if (!source) return alert('請先上傳檔案');
+                if (!isVideo) return document.getElementById('pngBtn').click();
+                
+                cancelBake = false;
+                const video = source;
+                const w = P.outW, h = P.outH;
+                const duration = video.duration;
+                const fps = 30;
+                
+                // 創建烘焙用的 canvas
+                const bakeCanvas = document.createElement('canvas');
+                bakeCanvas.width = w;
+                bakeCanvas.height = h;
+                const bakeCtx = bakeCanvas.getContext('2d');
+                
+                // MediaRecorder
+                const stream = bakeCanvas.captureStream(fps);
+                const recorder = new MediaRecorder(stream, {
+                    mimeType: 'video/webm;codecs=vp9',
+                    videoBitsPerSecond: 8000000
+                });
+                
+                const chunks = [];
+                recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                
+                recorder.onstop = () => {
+                    document.getElementById('progressBox').classList.remove('show');
+                    document.getElementById('bakeBtn').disabled = false;
+                    
+                    if (chunks.length && !cancelBake) {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `L-screen-3D-${w}x${h}.webm`;
+                        document.getElementById('progressText').textContent = '✓ 完成！下載中...';
+                        a.click();
+                    }
+                };
+                
+                // UI
+                document.getElementById('progressBox').classList.add('show');
+                document.getElementById('bakeBtn').disabled = true;
+                document.getElementById('progressFill').style.width = '0%';
+                document.getElementById('progressText').textContent = '準備中...';
+                
+                // 使用即時播放錄製方式 (更流暢)
+                video.currentTime = 0;
+                await video.play();
+                isPlaying = true;
+                document.getElementById('playBtn').textContent = '⏸️';
+                
+                recorder.start();
+                
+                const startTime = Date.now();
+                const fmt = t => Math.floor(t/60) + ':' + String(Math.floor(t%60)).padStart(2,'0');
+                
+                const recordFrame = () => {
+                    if (cancelBake || video.ended || video.currentTime >= duration - 0.05) {
+                        recorder.stop();
+                        video.pause();
+                        isPlaying = false;
+                        document.getElementById('playBtn').textContent = '▶️';
+                        return;
+                    }
+                    
+                    // 渲染當前幀
+                    renderOutput(bakeCtx, w, h, video);
+                    
+                    // 更新進度
+                    const pct = (video.currentTime / duration) * 100;
+                    document.getElementById('progressFill').style.width = pct + '%';
+                    document.getElementById('progressText').textContent = `烘焙中 ${Math.round(pct)}%`;
+                    document.getElementById('progressTime').textContent = fmt(video.currentTime) + ' / ' + fmt(duration);
+                    
+                    requestAnimationFrame(recordFrame);
+                };
+                
+                recordFrame();
+            };
+        }
+        
+        // ===== Main Loop =====
+        function loop() {
+            handleKeys();
+            
+            if (currentView === '3d') {
+                render3D();
+            } else {
+                renderOutput(ctxOut, P.outW, P.outH, source);
+            }
+            
+            document.getElementById('camInfo').textContent = `相機: (${cam.x.toFixed(0)}, ${cam.y.toFixed(0)}, ${cam.z.toFixed(0)})`;
+            
+            requestAnimationFrame(loop);
+        }
+        
+        // ===== 3D Render =====
+        function render3D() {
+            const w = canvas3d.width, h = canvas3d.height;
+            ctx3d.fillStyle = '#0d0d1a';
+            ctx3d.fillRect(0, 0, w, h);
+            
+            const radH = cam.rotH * Math.PI / 180;
+            const radV = cam.rotV * Math.PI / 180;
+            
+            // 地板格線
+            ctx3d.strokeStyle = 'rgba(255,255,255,0.05)';
+            for (let i = -10; i <= 10; i++) {
+                const p1 = proj({x: i*80, y: 300, z: -800}, w, h, radH, radV);
+                const p2 = proj({x: i*80, y: 300, z: 800}, w, h, radH, radV);
+                if (p1 && p2) { ctx3d.beginPath(); ctx3d.moveTo(p1.x, p1.y); ctx3d.lineTo(p2.x, p2.y); ctx3d.stroke(); }
+                const p3 = proj({x: -800, y: 300, z: i*80}, w, h, radH, radV);
+                const p4 = proj({x: 800, y: 300, z: i*80}, w, h, radH, radV);
+                if (p3 && p4) { ctx3d.beginPath(); ctx3d.moveTo(p3.x, p3.y); ctx3d.lineTo(p4.x, p4.y); ctx3d.stroke(); }
+            }
+            
+            // L型面板
+            const panelW = P.panelW, panelH = P.panelH;
+            const split = P.split / 100;
+            const leftW = panelW * split;
+            const rightW = panelW * (1 - split);
+            const ang = ((180 - P.angle) / 2) * Math.PI / 180;
+            
+            const verts = [
+                {x: -leftW * Math.cos(ang), y: -panelH/2, z: -leftW * Math.sin(ang)}, // TL
+                {x: 0, y: -panelH/2, z: 0}, // TM
+                {x: rightW * Math.cos(ang), y: -panelH/2, z: -rightW * Math.sin(ang)}, // TR
+                {x: -leftW * Math.cos(ang), y: panelH/2, z: -leftW * Math.sin(ang)}, // BL
+                {x: 0, y: panelH/2, z: 0}, // BM
+                {x: rightW * Math.cos(ang), y: panelH/2, z: -rightW * Math.sin(ang)} // BR
+            ];
+            
+            const sv = verts.map(v => proj(v, w, h, radH, radV));
+            
+            if (sv.every(v => v) && source) {
+                const srcW = isVideo ? source.videoWidth : source.width;
+                const srcH = isVideo ? source.videoHeight : source.height;
+                
+                // 左面板
+                drawQuad(ctx3d, source, sv[0], sv[1], sv[4], sv[3], 0, 0, split, 1);
+                // 右面板  
+                drawQuad(ctx3d, source, sv[1], sv[2], sv[5], sv[4], split, 0, 1, 1);
+            }
+            
+            // 邊框
+            if (sv.every(v => v)) {
+                ctx3d.lineWidth = 3;
+                ctx3d.strokeStyle = '#00d4ff';
+                ctx3d.beginPath();
+                ctx3d.moveTo(sv[0].x, sv[0].y); ctx3d.lineTo(sv[1].x, sv[1].y);
+                ctx3d.lineTo(sv[4].x, sv[4].y); ctx3d.lineTo(sv[3].x, sv[3].y);
+                ctx3d.closePath(); ctx3d.stroke();
+                
+                ctx3d.strokeStyle = '#a855f7';
+                ctx3d.beginPath();
+                ctx3d.moveTo(sv[1].x, sv[1].y); ctx3d.lineTo(sv[2].x, sv[2].y);
+                ctx3d.lineTo(sv[5].x, sv[5].y); ctx3d.lineTo(sv[4].x, sv[4].y);
+                ctx3d.closePath(); ctx3d.stroke();
+            }
+        }
+        
+        function proj(v, w, h, radH, radV) {
+            let x = v.x - cam.x, y = v.y - cam.y, z = v.z - cam.z;
+            let x1 = x * Math.cos(-radH) - z * Math.sin(-radH);
+            let z1 = x * Math.sin(-radH) + z * Math.cos(-radH);
+            let y1 = y * Math.cos(-radV) - z1 * Math.sin(-radV);
+            let z2 = y * Math.sin(-radV) + z1 * Math.cos(-radV);
+            if (z2 >= -50) return null;
+            const s = cam.fov / (-z2);
+            return {x: w/2 + x1*s, y: h/2 + y1*s};
+        }
+        
+        function drawQuad(c, src, p0, p1, p2, p3, u0, v0, u1, v1) {
+            const srcW = isVideo ? src.videoWidth : src.width;
+            const srcH = isVideo ? src.videoHeight : src.height;
+            const div = 8;
+            
+            for (let i = 0; i < div; i++) {
+                for (let j = 0; j < div; j++) {
+                    const t0 = i/div, t1 = (i+1)/div, s0 = j/div, s1 = (j+1)/div;
+                    const lerp = (a,b,t) => a+(b-a)*t;
+                    const bilerp = (t,s) => ({
+                        x: lerp(lerp(p0.x,p1.x,t), lerp(p3.x,p2.x,t), s),
+                        y: lerp(lerp(p0.y,p1.y,t), lerp(p3.y,p2.y,t), s)
+                    });
+                    const q = [bilerp(t0,s0), bilerp(t1,s0), bilerp(t1,s1), bilerp(t0,s1)];
+                    const su0 = lerp(u0,u1,t0)*srcW, su1 = lerp(u0,u1,t1)*srcW;
+                    const sv0 = lerp(v0,v1,s0)*srcH, sv1 = lerp(v0,v1,s1)*srcH;
+                    
+                    c.save();
+                    c.beginPath();
+                    c.moveTo(q[0].x, q[0].y);
+                    c.lineTo(q[1].x, q[1].y);
+                    c.lineTo(q[2].x, q[2].y);
+                    c.lineTo(q[3].x, q[3].y);
+                    c.closePath();
+                    c.clip();
+                    
+                    const dx = q[1].x-q[0].x, dy = q[1].y-q[0].y;
+                    const ex = q[3].x-q[0].x, ey = q[3].y-q[0].y;
+                    const sw = su1-su0, sh = sv1-sv0;
+                    if (Math.abs(sw)>0.1 && Math.abs(sh)>0.1) {
+                        c.setTransform(dx/sw, dy/sw, ex/sh, ey/sh, q[0].x-su0*dx/sw-sv0*ex/sh, q[0].y-su0*dy/sw-sv0*ey/sh);
+                        c.drawImage(src, 0, 0);
+                    }
+                    c.restore();
+                }
+            }
+        }
+        
+        // ===== Output Render (反向透視) =====
+        function renderOutput(c, w, h, src) {
+            c.fillStyle = '#000';
+            c.fillRect(0, 0, w, h);
+            
+            if (!src) {
+                c.fillStyle = '#444';
+                c.font = '24px sans-serif';
+                c.textAlign = 'center';
+                c.fillText('請上傳影片或圖片', w/2, h/2);
+                return;
+            }
+            
+            const srcW = isVideo ? src.videoWidth : src.width;
+            const srcH = isVideo ? src.videoHeight : src.height;
+            if (!srcW || !srcH) return;
+            
+            const split = P.split / 100;
+            const splitX = w * split;
+            const scale = P.scale / 100;
+            const persp = P.persp / 100;
+            const shadow = P.shadow / 100;
+            const fold = P.fold / 100;
+            
+            // 邊距 (內容縮放)
+            const mx = w * (1 - scale) / 2;
+            const my = h * (1 - scale) / 2;
+            
+            // 透視變形量 (中間窄，外側寬)
+            const pinchCenter = h * persp * 0.25;
+            const pinchEdge = h * persp * 0.05;
+            
+            // ===== 左面板 =====
+            c.save();
+            c.beginPath();
+            c.moveTo(mx, my + pinchEdge);                    // 左上
+            c.lineTo(splitX, my + pinchCenter);              // 右上 (內縮)
+            c.lineTo(splitX, h - my - pinchCenter);          // 右下 (內縮)
+            c.lineTo(mx, h - my - pinchEdge);                // 左下
+            c.closePath();
+            c.clip();
+            
+            // 繪製左半圖像
+            c.drawImage(src, 0, 0, srcW * split, srcH, mx, my, splitX - mx, h - my*2);
+            
+            // 陰影 (右側漸暗)
+            if (shadow > 0) {
+                const gLeft = c.createLinearGradient(mx, 0, splitX, 0);
+                gLeft.addColorStop(0, 'rgba(0,0,0,0)');
+                gLeft.addColorStop(0.6, 'rgba(0,0,0,0)');
+                gLeft.addColorStop(1, `rgba(0,0,0,${shadow * 0.5})`);
+                c.fillStyle = gLeft;
+                c.fillRect(mx, my, splitX - mx, h - my*2);
+            }
+            c.restore();
+            
+            // ===== 右面板 =====
+            c.save();
+            c.beginPath();
+            c.moveTo(splitX, my + pinchCenter);              // 左上 (內縮)
+            c.lineTo(w - mx, my + pinchEdge);                // 右上
+            c.lineTo(w - mx, h - my - pinchEdge);            // 右下
+            c.lineTo(splitX, h - my - pinchCenter);          // 左下 (內縮)
+            c.closePath();
+            c.clip();
+            
+            // 繪製右半圖像
+            c.drawImage(src, srcW * split, 0, srcW * (1-split), srcH, splitX, my, w - mx - splitX, h - my*2);
+            
+            // 陰影 (左側漸暗)
+            if (shadow > 0) {
+                const gRight = c.createLinearGradient(splitX, 0, w - mx, 0);
+                gRight.addColorStop(0, `rgba(0,0,0,${shadow * 0.5})`);
+                gRight.addColorStop(0.4, 'rgba(0,0,0,0)');
+                gRight.addColorStop(1, 'rgba(0,0,0,0)');
+                c.fillStyle = gRight;
+                c.fillRect(splitX, my, w - mx - splitX, h - my*2);
+            }
+            c.restore();
+            
+            // ===== 中線摺痕 =====
+            if (fold > 0) {
+                const fw = 8 + fold * 15;
+                
+                // 陰影
+                const gFold = c.createLinearGradient(splitX - fw, 0, splitX + fw, 0);
+                gFold.addColorStop(0, 'rgba(0,0,0,0)');
+                gFold.addColorStop(0.35, `rgba(0,0,0,${fold * 0.3})`);
+                gFold.addColorStop(0.5, `rgba(0,0,0,${fold * 0.15})`);
+                gFold.addColorStop(0.65, `rgba(0,0,0,${fold * 0.3})`);
+                gFold.addColorStop(1, 'rgba(0,0,0,0)');
+                c.fillStyle = gFold;
+                c.fillRect(splitX - fw, my + pinchCenter, fw*2, h - my*2 - pinchCenter*2);
+                
+                // 高光
+                const gHi = c.createLinearGradient(splitX - 3, 0, splitX + 3, 0);
+                gHi.addColorStop(0, 'rgba(255,255,255,0)');
+                gHi.addColorStop(0.5, `rgba(255,255,255,${fold * 0.15})`);
+                gHi.addColorStop(1, 'rgba(255,255,255,0)');
+                c.fillStyle = gHi;
+                c.fillRect(splitX - 3, my + pinchCenter, 6, h - my*2 - pinchCenter*2);
+            }
+        }
+        
+        init();
+    })();
+    </script>
+</body>
+</html>
