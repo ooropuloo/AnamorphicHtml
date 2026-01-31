@@ -1,4 +1,4 @@
-# 🎯 裸眼3D L型螢幕轉換器
+# 🎯 裸眼3D L型螢幕轉換器[測試中]
 
 > Naked-Eye 3D Anamorphic Converter for L-Shaped Screens
 
@@ -39,8 +39,8 @@
 ### 本地使用
 
 ```bash
-git clone https://github.com/yourusername/L-Screen-3D-Converter.git
-cd L-Screen-3D-Converter
+git clone https://github.com/ooropuloo/AnamorphicHtml.git
+cd AnamorphicHtml
 # 直接用瀏覽器開啟 index.html
 open index.html
 ```
