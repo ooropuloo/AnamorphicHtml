@@ -1,161 +1,56 @@
-# 🎯 裸眼3D L型螢幕轉換器[測試中]
+# 🧪 AnamorphicHtml — L 型螢幕裸眼 3D 實驗 (WIP)
 
-> Naked-Eye 3D Anamorphic Converter for L-Shaped Screens
+![Status](https://img.shields.io/badge/Status-Experimental-orange) ![Help Wanted](https://img.shields.io/badge/Help%20Wanted-Needed-red)
 
-將普通影片/圖片轉換成可在 L 型螢幕上呈現裸眼 3D 效果的變形影片。
+嘗試使用純前端技術（HTML5 Canvas + JavaScript），探索能否在 **L 型軟性 AMOLED 螢幕** 上實現商場級的「裸眼 3D」效果。
 
-
-## ✨ 特色功能
-
-- 🎮 **3D 校正視圖** - WASD 導航，即時預覽 L 型螢幕效果
-- 📐 **完整參數調整** - 面板尺寸、夾角、透視強度等
-- 🎬 **一鍵烘焙輸出** - 輸出帶反向透視變形的 WebM 影片
-- 📷 **支援圖片/影片** - 支援常見圖片格式及 MP4/WebM 影片
-- 🖥️ **純前端運作** - 無需後端，瀏覽器即可運行
-
-## 🎯 原理說明
-
-```
-原始影片              輸出影片                L型螢幕上的效果
-┌─────────────┐      ┌─────────────┐         ╲   │   ╱
-│             │      │   ╲     ╱   │          ╲  │  ╱
-│    鯨魚     │  →   │    ╲   ╱    │    →      ╲ │ ╱   觀眾看到
-│             │      │     ╲ ╱     │            ╲│╱    立體的鯨魚
-│             │      │     ╱ ╲     │            ╱│╲    「跳出」螢幕
-└─────────────┘      └─────────────┘          ╱ │ ╲
-                                             L型螢幕
-   正常矩形           梯形變形               (俯視圖)
-                    (中間內縮)
-```
-
-**關鍵原理**：輸出的影片帶有「反向透視變形」。當在 L 型螢幕上全螢幕播放時，螢幕本身的角度會抵銷變形，站在轉角正前方觀看就能看到裸眼 3D 效果。
-
-## 🚀 快速開始
-
-### 線上使用
-
-直接開啟 `anamorphic-v9.html` 即可使用，無需安裝。
-
-### 本地使用
-
-```bash
-git clone https://github.com/ooropuloo/AnamorphicHtml.git
-cd AnamorphicHtml
-# 直接用瀏覽器開啟 index.html
-open index.html
-```
-
-## 📖 使用教學
-
-### 步驟 1：準備素材
-
-建議使用專門為裸眼 3D 設計的素材，特點：
-- 主體置中，兩側留空
-- 物件有「跳出」畫面的元素
-- 仰角拍攝效果更佳
-
-**Gemini/Sora 生成 Prompt 範例：**
-```
-A majestic whale swimming underwater, the whale's head and fins 
-EXTEND BEYOND the frame toward the viewer, breaking the fourth wall. 
-Camera from below looking up. The whale is CENTERED with empty space 
-on both sides. Photorealistic, cinematic lighting, 8K.
-```
-
-### 步驟 2：調整參數
-
-| 參數 | 建議值 | 說明 |
-|------|--------|------|
-| L型夾角 | 90° | 符合你的實際螢幕夾角 |
-| 透視強度 | 15-25% | 根據觀看距離調整 |
-| 內容縮放 | 80-90% | 留出邊緣給物件跳出 |
-| 深度陰影 | 40-60% | 增加立體感 |
-
-### 步驟 3：烘焙輸出
-
-1. 切換到「輸出預覽」確認效果
-2. 選擇輸出解析度（建議符合螢幕解析度）
-3. 點擊「烘焙輸出影片」
-4. 等待完成後自動下載 WebM
-
-### 步驟 4：播放
-
-1. `Win + P` 延伸螢幕到 L 型面板
-2. 將播放器視窗拖到 L 型螢幕
-3. 全螢幕播放烘焙好的影片
-4. **站在 L 型轉角正前方**觀看
-
-## 🎮 3D 視圖控制
-
-| 按鍵 | 功能 |
-|------|------|
-| `W` `A` `S` `D` | 前後左右移動 |
-| `Q` / `E` | 上升 / 下降 |
-| `滑鼠右鍵拖曳` | 旋轉視角 |
-| `滾輪` | 縮放 |
-| `R` | 重置視角 |
-
-## 📐 參數說明
-
-### L型螢幕參數
-
-| 參數 | 範圍 | 說明 |
-|------|------|------|
-| 面板寬度 | 300-1920 | 3D 視圖中的面板寬度 |
-| 面板高度 | 200-1080 | 3D 視圖中的面板高度 |
-| L型夾角 | 60°-120° | 兩面板的夾角，通常 90° |
-| 中線位置 | 25%-75% | 左右面板的分割比例 |
-| 透視強度 | 0%-50% | 梯形變形的程度 |
-
-### 效果調整
-
-| 參數 | 範圍 | 說明 |
-|------|------|------|
-| 內容縮放 | 60%-100% | 圖像縮放，留邊給物件跳出 |
-| 深度陰影 | 0%-100% | 中線兩側的漸層陰影 |
-| 中線摺痕 | 0%-100% | 轉角處的陰影和高光 |
-
-### 烘焙輸出
-
-| 選項 | 說明 |
-|------|------|
-| 720p | 1280×720，適合測試 |
-| 1080p | 1920×1080，一般螢幕 |
-| 1440p | 2560×1440，高解析度螢幕 |
-| 4K | 3840×2160，大型顯示器 |
-
-## 🛠️ 技術細節
-
-- **純前端** - HTML5 + Canvas + JavaScript
-- **影片處理** - MediaRecorder API
-- **3D 渲染** - 軟體渲染，無需 WebGL
-- **透視變形** - 雙線性插值網格變形
-
-## 📁 檔案結構
-
-```
-L-Screen-3D-Converter/
-├── index.html          # 主程式
-├── README.md           # 說明文件
-├── LICENSE             # MIT 授權
-└── docs/
-    ├── demo.gif        # 示範動畫
-    └── screenshot.png  # 截圖
-```
-
-## 🤝 貢獻
-
-歡迎提交 Issue 和 Pull Request！
-
-## 📄 授權
-
-MIT License - 自由使用、修改、分發
-
-## 🙏 致謝
-
-- 靈感來自商場中的 L 型裸眼 3D 顯示器
-- 感謝所有測試和回饋的使用者
+> **⚠️ 目前狀態：效果未達預期**
+> 目前的演算法能做到幾何上的變形（Deformation），但無法產生讓物體「飛出螢幕」的正確縱深錯覺。
+> **我非常需要社群的建議與協助！**
 
 ---
 
-**⭐ 如果這個專案對你有幫助，請給個 Star！**
+## 🖥️ 實驗硬體規格 (Hardware Specs)
+
+我不使用拼接螢幕，而是使用一塊完整的 **軟性 AMOLED (Flexible AMOLED)** 彎折成 L 型，這消除了中間的邊框縫隙，理論上應該能提供更完美的錯覺體驗。
+
+* **尺寸**: 6.67 inch
+* **解析度**: $1080(W) \times 2400(H)$ (長寬比約 1:2.2)
+* **顯示區域 (Active Area)**: $154.56 \text{mm} \times 69.552 \text{mm}$
+* **彎折方式**: 螢幕中段彎折 90°，形成底面與背面兩個顯示區。
+
+由於是高解析度的手機級面板，像素密度極高，理論上近距離觀看的細膩度遠勝商場 LED 牆。
+
+## ❓ 核心問題 (The Problem)
+
+商場裡的 L 型裸眼 3D（例如飛出的太空船、鯨魚）效果驚人。我目前的嘗試是將普通 2D 影片進行梯形校正（Keystone/Mesh distortion）後投射到 L 型螢幕上。
+
+**結果：** ❌ 畫面幾何形狀正確，但看起來就是「貼在轉角上的平面壁紙」，沒有立體感。
+
+### 我目前的推測原因
+經過研究，我認為單純的 2D Canvas 變形是不夠的，因為：
+1.  **缺乏 Off-axis Projection (離軸投影)**：商場的影片是針對特定視點（Sweet Spot），在 3D 軟體中設定非對稱視錐體（Asymmetric View Frustum）渲染出來的，而不是對 2D 影片做後製變形。
+2.  **缺少深度資訊**：普通的 2D 影片沒有 Z 軸資訊，無法重新映射到 L 型空間中正確的透視位置。
+
+## 🛠️ 目前的解決方案 (Current Impl)
+
+這是一個純前端的實驗工具，無須後端，瀏覽器打開即用。
+
+* **技術棧**: HTML5 Canvas 2D (無 WebGL), Vanilla JS.
+* **功能**:
+    * 雙線性插值網格變形 (Bilinear Interpolation Mesh Deformation).
+    * 即時預覽 L 型螢幕效果 (3D Preview).
+    * 參數調整：面板夾角、透視強度、陰影模擬.
+    * **Baking**: 支援將調整好的變形影片匯出為 WebM (VP9).
+
+### 檔案結構
+* `anamorphic-3d-converter.html`: **主工具** (3D 預覽 + 參數調整 + 烘焙輸出).
+* `index.html`: 舊版 6 點校正工具 (手動標記角點).
+
+## 🚀 如何執行
+
+```bash
+git clone [https://github.com/ooropuloo/AnamorphicHtml.git](https://github.com/ooropuloo/AnamorphicHtml.git)
+cd AnamorphicHtml
+# 直接用瀏覽器開啟
+open anamorphic-3d-converter.html
